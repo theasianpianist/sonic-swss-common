@@ -56,6 +56,7 @@ private:
     swss::DBConnector *m_subscribe;
     std::string m_channel;
     std::queue<std::string> m_queue;
+    std::size_t m_maxQueueSize;
 };
 
 }

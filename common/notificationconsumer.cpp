@@ -139,6 +139,11 @@ void swss::NotificationConsumer::processReply(redisReply *reply)
     SWSS_LOG_DEBUG("got message: %s", msg.c_str());
 
     m_queue.push(msg);
+
+    if (m_queue.size() > m_maxQueueSize)
+    {
+        m_maxQueueSize = m_queue.size();
+    }
 }
 
 void swss::NotificationConsumer::pop(std::string &op, std::string &data, std::vector<FieldValueTuple> &values)
@@ -163,6 +168,16 @@ void swss::NotificationConsumer::pop(std::string &op, std::string &data, std::ve
     data = fvValue(fvt);
 
     values.erase(values.begin());
+
+    if (m_queue.size() == 0 && m_maxQueueSize > 1000)
+    {
+        // std::queue does not automatically release allocated memory once it is no longer needed
+        // to prevent orchagent from hogging memory, we swap the queue with an empty one to release the memory
+        // if only a few entries are added to the queue and then removed, the amount of memory used is not significant so we don't need to swap.
+        std::queue<std::string> empty;
+        swap(m_queue, empty);
+        m_maxQueueSize = 0;
+    }
 }
 
 void swss::NotificationConsumer::pops(std::deque<KeyOpFieldsValuesTuple> &vkco)
